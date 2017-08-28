@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import User
 
 class Geo(models.Model):
     latitude = models.FloatField()
@@ -12,6 +11,12 @@ class Address(models.Model):
     zipcode = models.CharField(max_length=10)
     geo = models.OneToOneField(Geo,
         related_name="address",on_delete=models.CASCADE)
+
+class User(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    address = models.OneToOneField(Address,
+        related_name="person",on_delete=models.CASCADE)
 
 class Post(models.Model):
     title = models.CharField(max_length=100)
