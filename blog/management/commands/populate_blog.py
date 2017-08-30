@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
-from dj_blog.settings import BASE_DIR
+from django.db.utils import IntegrityError
 
+from dj_blog.settings import BASE_DIR
 from blog.models import Geo, Address, User, Post, Comment
 
 import os
@@ -30,7 +31,7 @@ class Command(BaseCommand):
         file_path = os.path.join(BASE_DIR,filename)
 
         if not self._verify_json_file(file_path):
-            raise CommandError("The path is invalid. Verify the path.")
+            raise CommandError("The path is invalid. Verify the path and use a file with format json.")
 
         content = self._load_file(file_path)
 
@@ -38,36 +39,65 @@ class Command(BaseCommand):
         posts = content.get("posts")
         comments = content.get("comments")
 
+        self.stdout.write("Loading Users data...")
+
         for user in users:
 
-            geo_data = {
-                "latitude": user.get("address").get("geo").get("lat"),
-                "longitude": user.get("address").get("geo").get("lng")
-            }
+            try:
+                geo = self._handle_geo(user)
 
-            address_data = {
-                "street": user.get("address").get("street"),
-                "suite": user.get("address").get("suite"),
-                "city": user.get("address").get("city"),
-                "zipcode": user.get("address").get("zipcode")
-            }
+                address = self._handle_address(user, geo)
 
-            user_data = {
-                "name": user.get("name"),
-                "email": user.get("email"),
-            }
+                self._handle_users(user, address)
 
-            geo_object = self._handle_geo(geo_data)
+            except IntegrityError:
+                raise CommandError("Data already was loaded previously.")
+        else:
+            self.stdout.write("Inserted {} users.".format(User.objects.all().count()))
 
-            address_object = self._handle_address(address_data, geo_object)
 
-            user_object = self._handle_users(user_data, address_object)
+        self.stdout.write("Loading Posts data...")
 
         for post in posts:
-            pass
+
+            user_id = post.get("userId")
+
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                raise CommandError("User doesn't exist. Insert before the related User. Id = {}".format(user_id))
+
+            try:
+                
+                self._handle_posts(post, user)
+
+            except IntegrityError:
+                raise CommandError("Data already was loaded previously.")
+        else:
+            self.stdout.write("Inserted {} posts.".format(Post.objects.all().count()))
+
+        self.stdout.write("Loading Comments data...")
 
         for comment in comments:
-            pass
+            
+            post_id = comment.get("postId")
+            
+            try:
+                post = Post.objects.get(id=post_id)
+            except Post.DoesNotExist:
+                raise CommandError("Post doesn't exist. Insert before the related Post. Id: {}".format(post_id))
+
+            try:
+                
+                self._handle_comments(comment, post)
+
+            except IntegrityError:
+                raise CommandError("Data already was loaded previously.")
+        else:
+            self.stdout.write("Inserted {} comments.".format(Comment.objects.all().count()))
+            
+        self.stdout.write("Data from {} was loaded successful.".format(filename))
+
 
     def _load_file(self,path):
         file_json = open(path)
@@ -79,22 +109,62 @@ class Command(BaseCommand):
         return os.path.lexists(json_file) and os.path.isfile(json_file)
 
     def _handle_posts(self,data_object, dependence):
-        pass
+
+        post_data = {
+            "title": data_object.get("title"),
+            "body": data_object.get("body"),
+        }
+
+        post_data["user"] = dependence
+
+        Post.objects.create(**post_data)
+
 
     def _handle_comments(self,data_object, dependence):
-        pass
+        
+        comment_data = {
+            "pk": data_object.get("id"),
+            "name": data_object.get("name"),
+            "email": data_object.get("email"),
+            "body": data_object.get("body"),
+        }
+
+        comment_data["post"] = dependence
+
+        Comment.objects.create(**comment_data)
 
     def _handle_users(self, data_object, dependence):
         
-        data_object["address"] = dependence
+        user_data = {
+            "pk": data_object.get("id"),
+            "name": data_object.get("name"),
+            "email": data_object.get("email"),
+        }
 
-        return User.objects.create(**data_object)
+        user_data["address"] = dependence
+
+        return User.objects.create(**user_data)
 
     def _handle_address(self, data_object, dependence):
         
-        data_object["geo"] = dependence
+        address_data = {
+            "pk": data_object.get("address").get("id"),
+            "street": data_object.get("address").get("street"),
+            "suite": data_object.get("address").get("suite"),
+            "city": data_object.get("address").get("city"),
+            "zipcode": data_object.get("address").get("zipcode")
+        }
 
-        return Address.objects.create(**data_object)
+        address_data["geo"] = dependence
+
+        return Address.objects.create(**address_data)
 
     def _handle_geo(self, data_object):
-        return Geo.objects.create(**data_object)
+
+        geo_data = {
+            "pk": data_object.get("address").get("geo").get("id"),
+            "latitude": data_object.get("address").get("geo").get("lat"),
+            "longitude": data_object.get("address").get("geo").get("lng")
+        }
+
+        return Geo.objects.create(**geo_data)
