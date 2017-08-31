@@ -1,5 +1,5 @@
-from .models import User, Post
-from .serializers import UserSerializer , PostSerializer
+from .models import User, Post, Comment
+from .serializers import UserSerializer , PostSerializer, CommentSerializer
 
 from django.shortcuts import reverse
 
@@ -18,6 +18,10 @@ class PostDataRepeated:
 	queryset = Post.objects.all()
 	serializer_class = PostSerializer
 
+class CommentDataRepeated:
+	queryset = Comment.objects.all()
+	serializer_class = CommentSerializer
+
 
 class UserList(UserDataRepeated, ListCreateAPIView):
 	name = 'user-list'
@@ -31,6 +35,12 @@ class PostList(PostDataRepeated, ListCreateAPIView):
 class PostDetail(PostDataRepeated, RetrieveUpdateDestroyAPIView):
 	name = 'post-detail'
 
+class CommentList(CommentDataRepeated, ListCreateAPIView):
+	name = 'comment-list'
+
+class CommentDetail(CommentDataRepeated, RetrieveUpdateDestroyAPIView):
+	name = 'comment-detail'
+
 
 class ApiRoot(GenericAPIView):
     name = 'api-root'
@@ -40,6 +50,7 @@ class ApiRoot(GenericAPIView):
     	data_api = {
     		'users':reverse(UserList.name,request=request),
     		'posts':reverse(PostList.name,request=request),
+    		'comments':reverse(CommentList.name,request=request),
     	}
 
     	return Response(data_api)

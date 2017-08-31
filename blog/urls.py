@@ -11,4 +11,8 @@ urlpatterns = [
 	url(r'^posts/$',views.PostList.as_view(),name=views.PostList.name),
 	url(r'^posts/(?P<pk>\d+)/$',views.PostDetail.as_view(),name=views.PostDetail.name),
 
+	url(r'^comments/$',views.CommentList.as_view(),name=views.CommentList.name),
+	url(r'^comments/(?P<pk>\d+)/$',views.CommentDetail.as_view(),name=views.CommentDetail.name),
+
+
 ]
