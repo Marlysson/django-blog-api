@@ -1,5 +1,5 @@
-from .models import User
-from .serializers import UserSerializer
+from .models import User, Post
+from .serializers import UserSerializer , PostSerializer
 
 from django.shortcuts import reverse
 
@@ -14,12 +14,19 @@ class UserDataRepeated:
 	queryset = User.objects.all()
 	serializer_class = UserSerializer
 
+class PostDataRepeated:
+	queryset = Post.objects.all()
+	serializer_class = PostSerializer
+
 
 class UserList(UserDataRepeated, ListCreateAPIView):
 	name = 'user-list'
 
 class UserDetail(UserDataRepeated, RetrieveUpdateDestroyAPIView):
 	name = 'user-detail'
+
+class PostDetail(PostDataRepeated, RetrieveUpdateDestroyAPIView):
+	name = 'post-detail'
 
 
 class ApiRoot(GenericAPIView):
