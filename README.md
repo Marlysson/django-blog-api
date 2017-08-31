@@ -6,6 +6,11 @@
 #### Como importar os dados
 
 > O arquivo deve estar na raiz do projeto.
+> Execute o comando migrate para as tabelas serem criadas no banco de dados.
+
+```
+python manage.py migrate
+```
 
 Execute o comando:
 
@@ -15,7 +20,7 @@ Execute o comando:
 python manage.py populate_blog
 ```
 
-> Utilizando outro nome:
+> Ou utilizando outro nome:
 
 ```
 python manage.py populate_blog --filename json_name.json
