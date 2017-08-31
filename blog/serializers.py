@@ -20,6 +20,7 @@ class AddressSerializer(serializers.HyperlinkedModelSerializer):
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
 
+	user = serializers.SlugRelatedField(queryset=User.objects.all(),slug_field="name")
 	class Meta:
 		model = Post
 		fields = ('url', 'pk', 'title','body', 'user')
