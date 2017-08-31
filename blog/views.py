@@ -25,6 +25,9 @@ class UserList(UserDataRepeated, ListCreateAPIView):
 class UserDetail(UserDataRepeated, RetrieveUpdateDestroyAPIView):
 	name = 'user-detail'
 
+class PostList(PostDataRepeated, ListCreateAPIView):
+	name = 'post-list'
+
 class PostDetail(PostDataRepeated, RetrieveUpdateDestroyAPIView):
 	name = 'post-detail'
 
@@ -36,6 +39,7 @@ class ApiRoot(GenericAPIView):
     	
     	data_api = {
     		'users':reverse(UserList.name,request=request),
+    		'posts':reverse(PostList.name,request=request),
     	}
 
     	return Response(data_api)
