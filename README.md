@@ -9,12 +9,13 @@
 
 Execute o comando:
 
-Nome padrão do arquivo: **db.json**
+> Nome padrão do arquivo: **db.json**
+
 ```
 python manage.py populate_blog
 ```
 
-Utilizando outro nome:
+> Utilizando outro nome:
 
 ```
 python manage.py populate_blog --filename json_name.json
