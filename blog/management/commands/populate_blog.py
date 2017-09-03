@@ -1,11 +1,19 @@
+
+# Django core imports
 from django.core.management.base import BaseCommand, CommandError
+from django.core.management import call_command
+from django.contrib.auth.models import User
 from django.db.utils import IntegrityError
 
-from dj_blog.settings import BASE_DIR
-from blog.models import Geo, Address, User, Post, Comment
+# Applications imports
+from dj_blog.settings import BASE_DIR, DATABASES
 
+from blog.models import Geo, Address, Post, Comment, Profile
+
+# Built-in libs import
 import os
 import json
+
 
 class Command(BaseCommand):
 
@@ -23,6 +31,8 @@ class Command(BaseCommand):
 
     def handle(self,*args,**options):
 
+        self._clean_db()
+
         filename = options.get("filename")
 
         if type(options.get("filename")) == list:
@@ -35,44 +45,37 @@ class Command(BaseCommand):
 
         content = self._load_file(file_path)
 
-        users = content.get("users")
+        profiles = content.get("users")
         posts = content.get("posts")
         comments = content.get("comments")
 
-        self.stdout.write("Loading Users data...")
+        self.stdout.write("Loading Profile data...")
 
-        for user in users:
+        for profile in profiles:
 
-            try:
-                geo = self._handle_geo(user)
+            geo = self._handle_geo(profile)
 
-                address = self._handle_address(user, geo)
+            address = self._handle_address(profile, geo)
 
-                self._handle_users(user, address)
+            self._handle_profiles(profile, address)
 
-            except IntegrityError:
-                raise CommandError("Data already was loaded previously.")
         else:
-            self.stdout.write("Inserted {} users.".format(User.objects.all().count()))
+            self.stdout.write("Inserted {} profiles.".format(Profile.objects.all().count()))
 
 
         self.stdout.write("Loading Posts data...")
 
         for post in posts:
 
-            user_id = post.get("userId")
+            profile_id = post.get("userId")
 
             try:
-                user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
-                raise CommandError("User doesn't exist. Insert before the related User. Id = {}".format(user_id))
+                profile = Profile.objects.get(id=profile_id)
+            except Profile.DoesNotExist:
+                raise CommandError("Profile doesn't exist. Insert before the related Profile. Id = {}".format(profile_id))
 
-            try:
-                
-                self._handle_posts(post, user)
+            self._handle_posts(post, profile)
 
-            except IntegrityError:
-                raise CommandError("Data already was loaded previously.")
         else:
             self.stdout.write("Inserted {} posts.".format(Post.objects.all().count()))
 
@@ -81,18 +84,14 @@ class Command(BaseCommand):
         for comment in comments:
             
             post_id = comment.get("postId")
-            
+
             try:
                 post = Post.objects.get(id=post_id)
             except Post.DoesNotExist:
                 raise CommandError("Post doesn't exist. Insert before the related Post. Id: {}".format(post_id))
-
-            try:
                 
-                self._handle_comments(comment, post)
+            self._handle_comments(comment, post)
 
-            except IntegrityError:
-                raise CommandError("Data already was loaded previously.")
         else:
             self.stdout.write("Inserted {} comments.".format(Comment.objects.all().count()))
             
@@ -111,13 +110,13 @@ class Command(BaseCommand):
     def _handle_posts(self,data_object, dependence):
 
         post_data = {
+            "pk": data_object.get("id"),
             "title": data_object.get("title"),
             "body": data_object.get("body"),
+            "profile": dependence
         }
 
-        post_data["user"] = dependence
-
-        Post.objects.create(**post_data)
+        return Post.objects.create(**post_data)
 
 
     def _handle_comments(self,data_object, dependence):
@@ -127,23 +126,41 @@ class Command(BaseCommand):
             "name": data_object.get("name"),
             "email": data_object.get("email"),
             "body": data_object.get("body"),
+            "post": dependence
         }
 
-        comment_data["post"] = dependence
+        return Comment.objects.create(**comment_data)
 
-        Comment.objects.create(**comment_data)
-
-    def _handle_users(self, data_object, dependence):
+    def _handle_profiles(self, data_object, dependence):
         
+        name = data_object.get("name").strip()
+
+        for part in name.split():
+            if part in ["Mrs.","Mr."] or len(part) <= 3:
+                name = name.replace(part,"")
+
+        name = name.strip().split()
+
+        first_name = name[0]
+        last_name = name[-1]
+
         user_data = {
             "pk": data_object.get("id"),
-            "name": data_object.get("name"),
-            "email": data_object.get("email"),
+            "username" : data_object.get("username"),
+            "first_name" : first_name,
+            "last_name" : last_name,
+            "email" : data_object.get("email")
         }
 
-        user_data["address"] = dependence
+        #Passing the user dictionary
+        user = User(**user_data)
+        user.set_password(user.username + "2017")
 
-        return User.objects.create(**user_data)
+        user.save()
+
+        return Profile.objects.create(id=user_data["pk"],
+                                      user=user,
+                                      address=dependence)
 
     def _handle_address(self, data_object, dependence):
         
@@ -152,10 +169,9 @@ class Command(BaseCommand):
             "street": data_object.get("address").get("street"),
             "suite": data_object.get("address").get("suite"),
             "city": data_object.get("address").get("city"),
-            "zipcode": data_object.get("address").get("zipcode")
+            "zipcode": data_object.get("address").get("zipcode"),
+            "geo": dependence
         }
-
-        address_data["geo"] = dependence
 
         return Address.objects.create(**address_data)
 
@@ -168,3 +184,12 @@ class Command(BaseCommand):
         }
 
         return Geo.objects.create(**geo_data)
+
+    def _clean_db(self):
+
+        database_path = DATABASES.get("default").get("NAME")
+
+        if os.path.exists(database_path):
+            os.remove(database_path)
+            
+        call_command("migrate")

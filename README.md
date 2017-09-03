@@ -6,6 +6,7 @@
 #### Como importar os dados
 
 > O arquivo deve estar na raiz do projeto.
+
 > Execute o comando migrate para as tabelas serem criadas no banco de dados.
 
 ```
