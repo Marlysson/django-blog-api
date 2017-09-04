@@ -9,7 +9,7 @@
 
 > Execute o comando migrate para as tabelas serem criadas no banco de dados.
 
-```
+```bash
 python manage.py migrate
 ```
 
@@ -17,12 +17,12 @@ Execute o comando:
 
 > Nome padrão do arquivo: **db.json**
 
-```
+```bash
 python manage.py populate_blog
 ```
 
 > Ou utilizando outro nome:
 
-```
+```bash
 python manage.py populate_blog --filename json_name.json
 ```
