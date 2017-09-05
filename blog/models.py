@@ -20,26 +20,6 @@ class Profile(models.Model):
                                 related_name="profile",on_delete=models.CASCADE)
     address = models.OneToOneField(Address, null=True, on_delete=models.SET_NULL)
 
-    @property
-    def username(self):
-        return self.user.username
-
-    @property
-    def email(self):
-        return self.user.email
-
-    @property
-    def first_name(self):
-        return self.user.first_name
-
-    @property
-    def last_name(self):
-        return self.user.last_name
-
-    @property
-    def name(self):
-        return "{} {}".format(self.user.first_name, self.user.last_name)
-
 
 class Post(models.Model):
     title = models.CharField(max_length=100)
