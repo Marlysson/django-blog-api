@@ -1,21 +1,23 @@
-from .models import User, Address, Geo, Post, Comment
+from django.contrib.auth.models import User
+
+from .models import Profile, Address, Geo, Post, Comment
 from rest_framework import serializers
 
 
-class GeoSerializer(serializers.HyperlinkedModelSerializer):
+class GeoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Geo
-        fields = ('pk', 'latitude', 'longitude')
+        fields =  ('latitude', 'longitude')
 
 
-class AddressSerializer(serializers.HyperlinkedModelSerializer):
+class AddressSerializer(serializers.ModelSerializer):
 
     geo = GeoSerializer()
 
     class Meta:
         model = Address
-        fields = ('pk', 'street', 'suite', 'city', 'zipcode', 'geo')
+        fields =  ('street', 'suite', 'city', 'zipcode', 'geo')
 
 
 
@@ -23,28 +25,56 @@ class CommentSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('url', 'pk', 'name', 'email', 'body')
+        fields = ('url', 'name', 'email', 'body', 'post')
+
+
+class ProfileDetailSerializer(serializers.ModelSerializer):
+
+    address = AddressSerializer()
+
+    user = serializers.HyperlinkedRelatedField(read_only=True,view_name="user-detail")
+
+    class Meta:
+        model = Profile
+        fields = ('url', 'user', 'address')
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Profile
+        fields = ('url',)
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    profile = serializers.HyperlinkedRelatedField(read_only=True,view_name="profile-detail")
+
+    class Meta:
+        model = User
+        fields = ('url', 'username', 'email', 'profile')
+
+
+class UserDetailSerializer(serializers.HyperlinkedModelSerializer   ):
+
+    profile = serializers.HyperlinkedRelatedField(read_only=True,view_name="profile-detail")
+
+    class Meta:
+        model = User
+        fields = ('url', 'username', 'first_name', 'last_name', 'email', 'profile')
 
 
 class PostSerializer(serializers.HyperlinkedModelSerializer):
 
-    user = serializers.SlugRelatedField(queryset=User.objects.all(),slug_field="name")
-
-    comments = CommentSerializer(many=True)
-
     class Meta:
         model = Post
-        fields = ('url', 'pk', 'title','body', 'user', 'comments')
+        fields = ('url', 'profile', 'title','body',)
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class PostDetailSerializer(serializers.HyperlinkedModelSerializer):
 
-    address = AddressSerializer()
-
-    posts = serializers.HyperlinkedRelatedField(many=True,
-                                                read_only=True,
-                                                view_name="post-detail")
-
+    comments = serializers.HyperlinkedRelatedField(many=True,read_only=True,view_name="comment-detail")
+    
     class Meta:
-        model = User
-        fields = ('url', 'pk', 'name', 'email', 'address', 'posts')
+        model = Post
+        fields = ('url', 'profile', 'title','body','comments')
